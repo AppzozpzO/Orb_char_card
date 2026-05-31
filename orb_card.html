@@ -1,0 +1,1818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>法球卡 - Once Adventurers Guild</title>
+    <style>
+        /* ===== CSS变量与配色系统 ===== */
+        :root {
+            --card-width: 400px;
+            --card-height: 560px;
+            --card-radius: 16px;
+            --transition-speed: 0.4s;
+            
+            /* 金色系变量 */
+            --gold-light: #e8d4a0;
+            --gold-primary: #c9a962;
+            --gold-dark: #8b6914;
+            
+            /* 蓝色系变量 */
+            --blue-light: #60a5fa;
+            --blue-primary: #3b82f6;
+            --blue-dark: #1d4ed8;
+        }
+
+        /* 黑金配色 */
+        .theme-black {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-card: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0d0d0d 100%);
+            --border-color: #c9a962;
+            --border-glow: rgba(201, 169, 98, 0.4);
+            --text-primary: #f5f5f5;
+            --text-secondary: #c9a962;
+            --text-muted: #888888;
+            --accent-color: #c9a962;
+            --accent-glow: rgba(201, 169, 98, 0.6);
+            --panel-bg: rgba(26, 26, 26, 0.98);
+            --panel-border: #c9a962;
+            --button-bg: linear-gradient(145deg, #3d3d3d, #1a1a1a);
+            --button-hover: #c9a962;
+            --magic-circle: #c9a962;
+            --highlight-letter: #c9a962;
+            --faded-letter: rgba(136, 136, 136, 0.7);
+        }
+
+        /* 蓝白配色 */
+        .theme-white {
+            --bg-primary: #f0f4f8;
+            --bg-secondary: #ffffff;
+            --bg-card: linear-gradient(145deg, #ffffff 0%, #f0f4f8 50%, #e2e8f0 100%);
+            --border-color: #3b82f6;
+            --border-glow: rgba(59, 130, 246, 0.3);
+            --text-primary: #1e293b;
+            --text-secondary: #3b82f6;
+            --text-muted: #64748b;
+            --accent-color: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --panel-bg: rgba(255, 255, 255, 0.98);
+            --panel-border: #3b82f6;
+            --button-bg: linear-gradient(145deg, #ffffff, #e2e8f0);
+            --button-hover: #3b82f6;
+            --magic-circle: #3b82f6;
+            --highlight-letter: #3b82f6;
+            --faded-letter: rgba(100, 116, 139, 0.6);
+        }
+
+        /* ===== 全局重置 ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            transition: background var(--transition-speed) ease;
+        }
+
+        /* ===== 悬浮配色切换按钮 ===== */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid var(--border-color);
+            background: var(--button-bg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: var(--text-secondary);
+            box-shadow: 0 4px 15px var(--accent-glow);
+            transition: all 0.3s ease;
+            z-index: 100;
+            user-select: none;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 6px 20px var(--accent-glow);
+        }
+
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+
+        /* ===== 控制栏 ===== */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--border-color);
+            background: var(--button-bg);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        /* ===== 卡片容器 ===== */
+        .card-container {
+            perspective: 1500px;
+            width: var(--card-width);
+            height: var(--card-height);
+            cursor: pointer;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: var(--card-radius);
+            background: var(--bg-card);
+            border: 3px solid var(--border-color);
+            box-shadow: 
+                0 0 30px var(--border-glow),
+                0 20px 60px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* ===== 卡片正面（身份证背面风格） ===== */
+        .card-front {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+        }
+
+        /* 魔法阵容器 */
+        .magic-circle-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 50px auto 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 魔法阵CSS绘制 - 4层同心圆 */
+        .magic-circle {
+            position: absolute;
+            border: 2px solid var(--magic-circle);
+            border-radius: 50%;
+            animation: rotate 20s linear infinite;
+        }
+
+        .magic-circle.layer-1 {
+            width: 200px;
+            height: 200px;
+        }
+
+        .magic-circle.layer-2 {
+            width: 160px;
+            height: 160px;
+            animation-direction: reverse;
+            animation-duration: 15s;
+        }
+
+        .magic-circle.layer-3 {
+            width: 120px;
+            height: 120px;
+            animation-duration: 10s;
+        }
+
+        .magic-circle.layer-4 {
+            width: 80px;
+            height: 80px;
+            animation-direction: reverse;
+            animation-duration: 8s;
+        }
+
+        /* 核心光球 */
+        .magic-circle.core {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: var(--magic-circle);
+            opacity: 0.3;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* 4个方位符文 */
+        .magic-rune {
+            position: absolute;
+            color: var(--magic-circle);
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .magic-rune:nth-child(1) { top: 10px; left: 50%; transform: translateX(-50%); }
+        .magic-rune:nth-child(2) { right: 10px; top: 50%; transform: translateY(-50%); }
+        .magic-rune:nth-child(3) { bottom: 10px; left: 50%; transform: translateX(-50%); }
+        .magic-rune:nth-child(4) { left: 10px; top: 50%; transform: translateY(-50%); }
+
+        /* 动画 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.2); opacity: 0.6; }
+        }
+
+        /* 发行文字样式 - 身份证严肃风格 */
+        .issuer-text {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .issuer-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            white-space: nowrap;
+        }
+
+        .letter-highlight {
+            color: var(--highlight-letter);
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        .letter-faded {
+            color: var(--faded-letter);
+            font-weight: 400;
+        }
+
+        .issuer-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+        }
+
+        .card-id {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+        }
+
+        /* ===== 卡片背面（主信息面） ===== */
+        .card-header {
+            padding: 15px 20px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+        }
+
+        .card-type {
+            font-size: 11px;
+            padding: 4px 10px;
+            background: var(--accent-color);
+            color: var(--bg-primary);
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .card-content {
+            padding: 20px;
+            height: calc(100% - 60px);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 15px;
+        }
+
+        /* ===== 田字格模块按钮 ===== */
+        .module-btn {
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--button-bg);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .module-btn:hover {
+            background: var(--accent-color);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px var(--accent-glow);
+        }
+
+        .module-btn:hover .module-icon,
+        .module-btn:hover .module-name {
+            color: var(--bg-primary);
+        }
+
+        .module-icon {
+            font-size: 32px;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+
+        .module-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+
+        /* ===== 展开投影层 ===== */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 12px;
+            max-width: 600px;
+            max-height: 90vh;
+            width: 100%;
+            overflow-y: auto;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .overlay.active .panel {
+            transform: scale(1);
+        }
+
+        .panel-header {
+            padding: 15px 20px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: var(--panel-bg);
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .panel-close {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: var(--button-bg);
+            color: var(--text-secondary);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .panel-close:hover {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+        }
+
+        .panel-content {
+            padding: 20px;
+        }
+
+        /* ===== 表单网格布局 ===== */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .form-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .form-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .form-full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-value {
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+            min-height: 34px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-value.textarea {
+            min-height: 80px;
+            align-items: flex-start;
+            white-space: pre-wrap;
+        }
+
+        /* ===== 头像区域 ===== */
+        .avatar-container {
+            grid-column: 1;
+            grid-row: 1 / 4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avatar-placeholder {
+            width: 120px;
+            height: 160px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 12px;
+            background: var(--bg-secondary);
+        }
+
+        /* ===== 属性网格 ===== */
+        .attr-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .attr-item {
+            text-align: center;
+            padding: 10px 5px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .attr-name {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .attr-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .attr-vs {
+            font-size: 10px;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        /* ===== 状态栏 ===== */
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .status-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        /* ===== 装备上中下垂直布局 ===== */
+        .equipment-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .equipment-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .equipment-section-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        /* 武器模块：主手+副手左右并排 */
+        .weapons-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .equipment-subcard {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .equipment-subtitle {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* 防具模块：2×2网格 */
+        .armor-slots {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .armor-slot {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .armor-slot-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* 响应式：装备布局 */
+        @media (max-width: 600px) {
+            .weapons-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .armor-slots {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== 装备卡片 ===== */
+        .equipment-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .equipment-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* ===== 法球系统 ===== */
+        .magic-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .magic-tab {
+            padding: 8px 16px;
+            background: var(--button-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .magic-tab.active {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+        }
+
+        .magic-tab:hover:not(.active) {
+            border-color: var(--accent-color);
+        }
+
+        .orb-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .orb-slot {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            position: relative;
+        }
+
+        .orb-level {
+            position: absolute;
+            top: -10px;
+            right: 15px;
+            padding: 4px 10px;
+            background: var(--accent-color);
+            color: var(--bg-primary);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .orb-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .orb-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg-primary);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .orb-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .orb-prefix {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ===== 滚动条样式 ===== */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        /* ===== 响应式设计 ===== */
+        @media (max-width: 480px) {
+            :root {
+                --card-width: 340px;
+                --card-height: 480px;
+            }
+
+            .form-grid,
+            .form-grid-2,
+            .form-grid-3,
+            .form-grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .attr-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .avatar-container {
+                grid-row: auto;
+                margin-bottom: 15px;
+            }
+
+            .panel {
+                max-height: 95vh;
+            }
+
+            .magic-tabs {
+                flex-wrap: wrap;
+            }
+
+            .theme-toggle {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+                top: 15px;
+                right: 15px;
+            }
+
+            .module-icon {
+                font-size: 28px;
+            }
+
+            .module-name {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            :root {
+                --card-width: 300px;
+                --card-height: 440px;
+            }
+
+            .controls {
+                gap: 8px;
+            }
+
+            .control-btn {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+
+            .card-content {
+                gap: 10px;
+                padding: 15px;
+            }
+
+            .module-icon {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body class="theme-black">
+    <!-- 悬浮配色切换按钮 -->
+    <div class="theme-toggle" onclick="toggleTheme()" title="切换配色">
+        ◈
+    </div>
+
+    <!-- 控制栏 -->
+    <div class="controls">
+        <button class="control-btn" onclick="flipCard()">翻转卡片</button>
+    </div>
+
+    <!-- 卡片容器 -->
+    <div class="card-container" onclick="handleCardClick(event)">
+        <div class="card" id="mainCard">
+            <!-- 卡片正面（身份证背面） -->
+            <div class="card-face card-front">
+                <div class="magic-circle-container">
+                    <div class="magic-circle layer-1"></div>
+                    <div class="magic-circle layer-2"></div>
+                    <div class="magic-circle layer-3"></div>
+                    <div class="magic-circle layer-4"></div>
+                    <div class="magic-circle core"></div>
+                    <div class="magic-rune">◈</div>
+                    <div class="magic-rune">◈</div>
+                    <div class="magic-rune">◈</div>
+                    <div class="magic-rune">◈</div>
+                </div>
+                <div class="issuer-text">
+                    <div class="issuer-title">
+                        <span class="letter-highlight">O</span><span class="letter-faded">nce</span>
+                        <span style="display:inline-block;width:8px"></span>
+                        <span class="letter-highlight">A</span><span class="letter-faded">dventurers</span>
+                        <span style="display:inline-block;width:8px"></span>
+                        <span class="letter-highlight">G</span><span class="letter-faded">uild</span>
+                    </div>
+                    <div class="issuer-subtitle">法球教会发行</div>
+                </div>
+                <div class="card-id">NO.ORB-000000</div>
+            </div>
+
+            <!-- 卡片背面（主信息面） -->
+            <div class="card-face card-back">
+                <div class="card-header">
+                    <span class="card-title">冒险者登记卡</span>
+                    <span class="card-type">法球使</span>
+                </div>
+                <div class="card-content">
+                    <!-- 基础信息模块 -->
+                    <div class="module-btn" onclick="openPanel('basic'); event.stopPropagation();">
+                        <span class="module-icon">📋</span>
+                        <span class="module-name">基础信息</span>
+                    </div>
+
+                    <!-- 个体评价模块 -->
+                    <div class="module-btn" onclick="openPanel('stats'); event.stopPropagation();">
+                        <span class="module-icon">⚔</span>
+                        <span class="module-name">个体评价</span>
+                    </div>
+
+                    <!-- 持有装备模块 -->
+                    <div class="module-btn" onclick="openPanel('equipment'); event.stopPropagation();">
+                        <span class="module-icon">🛡</span>
+                        <span class="module-name">持有装备</span>
+                    </div>
+
+                    <!-- 魔导学模块 -->
+                    <div class="module-btn" onclick="openPanel('magic'); event.stopPropagation();">
+                        <span class="module-icon">✦</span>
+                        <span class="module-name">魔导学</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 展开投影层 ===== -->
+
+    <!-- 基础信息面板 -->
+    <div class="overlay" id="panel-basic">
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">基础信息</span>
+                <button class="panel-close" onclick="closePanel('basic')">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="form-grid">
+                    <div class="avatar-container">
+                        <div class="avatar-placeholder" id="char-avatar">
+                            <span>头像区域</span>
+                            <span style="font-size:10px;margin-top:5px">3:4比例</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">姓名</label>
+                        <div class="form-value" id="char-name"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">性别</label>
+                        <div class="form-value" id="char-gender"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">种族</label>
+                        <div class="form-value" id="char-race"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">年龄</label>
+                        <div class="form-value" id="char-age"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">出生地</label>
+                        <div class="form-value" id="char-birthplace"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">职业</label>
+                        <div class="form-value" id="char-class"></div>
+                    </div>
+                    <div class="form-group form-full">
+                        <label class="form-label">外貌</label>
+                        <div class="form-value textarea" id="char-appearance"></div>
+                    </div>
+                    <div class="form-group form-full">
+                        <label class="form-label">性格</label>
+                        <div class="form-value textarea" id="char-personality"></div>
+                    </div>
+                    <div class="form-group form-full">
+                        <label class="form-label">目标</label>
+                        <div class="form-value textarea" id="char-goal"></div>
+                    </div>
+                    <div class="form-group form-full">
+                        <label class="form-label">背景故事</label>
+                        <div class="form-value textarea" id="char-backstory"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 个体评价面板 -->
+    <div class="overlay" id="panel-stats">
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">个体评价</span>
+                <button class="panel-close" onclick="closePanel('stats')">×</button>
+            </div>
+            <div class="panel-content">
+                <!-- 八维属性 -->
+                <h4 style="color:var(--text-secondary);margin-bottom:10px;font-size:13px">八维属性</h4>
+                <div class="attr-grid">
+                    <div class="attr-item">
+                        <div class="attr-name">力量 STR</div>
+                        <div class="attr-value" id="attr-str">--</div>
+                        <div class="attr-vs">对抗: <span id="attr-str-vs">--</span></div>
+                    </div>
+                    <div class="attr-item">
+                        <div class="attr-name">敏捷 DEX</div>
+                        <div class="attr-value" id="attr-dex">--</div>
+                        <div class="attr-vs">对抗: <span id="attr-dex-vs">--</span></div>
+                    </div>
+                    <div class="attr-item">
+                        <div class="attr-name">体质 CON</div>
+                        <div class="attr-value" id="attr-con">--</div>
+                        <div class="attr-vs">对抗: <span id="attr-con-vs">--</span></div>
+                    </div>
+                    <div class="attr-item">
+                        <div class="attr-name">智力 INT</div>
+                        <div class="attr-value" id="attr-int">--</div>
+                        <div class="attr-vs">对抗: <span id="attr-int-vs">--</span></div>
+                    </div>
+                    <div class="attr-item">
+                        <div class="attr-name">意志 WIL</div>
+                        <div class="attr-value" id="attr-wil">--</div>
+                        <div class="attr-vs">对抗: <span id="attr-wil-vs">--</span></div>
+                    </div>
+                    <div class="attr-item">
+                        <div class="attr-name">感知 PER</div>
+                        <div class="attr-value" id="attr-per">--</div>
+                        <div class="attr-vs">对抗: <span id="attr-per-vs">--</span></div>
+                    </div>
+                    <div class="attr-item">
+                        <div class="attr-name">幸运 LUK</div>
+                        <div class="attr-value" id="attr-luk">--</div>
+                        <div class="attr-vs">对抗: <span id="attr-luk-vs">--</span></div>
+                    </div>
+                    <div class="attr-item">
+                        <div class="attr-name">外貌 CHA</div>
+                        <div class="attr-value" id="attr-cha">--</div>
+                        <div class="attr-vs">对抗: <span id="attr-cha-vs">--</span></div>
+                    </div>
+                </div>
+
+                <!-- 基础状态 -->
+                <h4 style="color:var(--text-secondary);margin-bottom:10px;font-size:13px">基础状态</h4>
+                <div class="status-bar">
+                    <div class="status-item">
+                        <div class="status-label">生命值 HP</div>
+                        <div class="status-value" id="stat-hp">--</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">体力值 SP</div>
+                        <div class="status-value" id="stat-sp">--</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">魔力值 MP</div>
+                        <div class="status-value" id="stat-mp">--</div>
+                    </div>
+                </div>
+
+                <!-- 其他数值 -->
+                <div class="form-grid-3" style="margin-bottom:20px">
+                    <div class="form-group">
+                        <label class="form-label">持有金钱</label>
+                        <div class="form-value" id="stat-gold"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">剩余属性点</label>
+                        <div class="form-value" id="stat-points"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">普攻值</label>
+                        <div class="form-value" id="stat-attack"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">伤害类型</label>
+                        <div class="form-value" id="stat-dmgtype"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">攻击抵抗</label>
+                        <div class="form-value" id="stat-def"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">效果抵抗</label>
+                        <div class="form-value" id="stat-res"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">攻击属性</label>
+                        <div class="form-value" id="stat-atkattr"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">效果属性</label>
+                        <div class="form-value" id="stat-effattr"></div>
+                    </div>
+                </div>
+
+                <!-- 命中属性 -->
+                <h4 style="color:var(--text-secondary);margin-bottom:10px;font-size:13px">命中属性</h4>
+                <div class="form-grid-4">
+                    <div class="form-group">
+                        <label class="form-label">主手攻击命中</label>
+                        <div class="form-value" id="hit-main-atk"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">主手效果命中</label>
+                        <div class="form-value" id="hit-main-eff"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">副手攻击命中</label>
+                        <div class="form-value" id="hit-off-atk"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">副手效果命中</label>
+                        <div class="form-value" id="hit-off-eff"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 持有装备面板 -->
+    <div class="overlay" id="panel-equipment">
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">持有装备</span>
+                <button class="panel-close" onclick="closePanel('equipment')">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="equipment-grid">
+                    <!-- 武器模块（上方：主手+副手左右并排） -->
+                    <div class="equipment-section">
+                        <div class="equipment-section-title">⚔ 武器</div>
+                        <div class="weapons-row">
+                            <!-- 主手武器 -->
+                            <div class="equipment-subcard">
+                                <div class="equipment-subtitle">主手武器</div>
+                                <div class="form-group">
+                                    <label class="form-label">武器名称</label>
+                                    <div class="form-value" id="eq-main-name"></div>
+                                </div>
+                                <div class="form-grid-3" style="margin-top:10px">
+                                    <div class="form-group">
+                                        <label class="form-label">补正值</label>
+                                        <div class="form-value" id="eq-main-bonus"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">攻击命中</label>
+                                        <div class="form-value" id="eq-main-atkhit"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">效果命中</label>
+                                        <div class="form-value" id="eq-main-effhit"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">消耗</label>
+                                        <div class="form-value" id="eq-main-cost"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">攻击范围</label>
+                                        <div class="form-value" id="eq-main-range"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">使用限制</label>
+                                        <div class="form-value" id="eq-main-limit"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-top:10px">
+                                    <label class="form-label">特殊效果</label>
+                                    <div class="form-value textarea" id="eq-main-effect"></div>
+                                </div>
+                            </div>
+
+                            <!-- 副手武器 -->
+                            <div class="equipment-subcard">
+                                <div class="equipment-subtitle">副手武器</div>
+                                <div class="form-group">
+                                    <label class="form-label">武器名称</label>
+                                    <div class="form-value" id="eq-off-name"></div>
+                                </div>
+                                <div class="form-grid-3" style="margin-top:10px">
+                                    <div class="form-group">
+                                        <label class="form-label">补正值</label>
+                                        <div class="form-value" id="eq-off-bonus"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">攻击命中</label>
+                                        <div class="form-value" id="eq-off-atkhit"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">效果命中</label>
+                                        <div class="form-value" id="eq-off-effhit"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">消耗</label>
+                                        <div class="form-value" id="eq-off-cost"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">攻击范围</label>
+                                        <div class="form-value" id="eq-off-range"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">使用限制</label>
+                                        <div class="form-value" id="eq-off-limit"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-top:10px">
+                                    <label class="form-label">特殊效果</label>
+                                    <div class="form-value textarea" id="eq-off-effect"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 防具模块（中间：2×2网格） -->
+                    <div class="equipment-section">
+                        <div class="equipment-section-title">🛡 防具</div>
+                        <div class="equipment-subcard">
+                            <div class="armor-slots">
+                                <!-- 头部 -->
+                                <div class="armor-slot">
+                                    <div class="armor-slot-label">👤 头部</div>
+                                    <div class="form-group">
+                                        <label class="form-label">防具名称</label>
+                                        <div class="form-value" id="eq-armor-head-name"></div>
+                                    </div>
+                                    <div class="form-grid-2" style="margin-top:8px">
+                                        <div class="form-group">
+                                            <label class="form-label">攻击抵抗</label>
+                                            <div class="form-value" id="eq-armor-head-def"></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">效果抵抗</label>
+                                            <div class="form-value" id="eq-armor-head-res"></div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-top:8px">
+                                        <label class="form-label">特殊效果</label>
+                                        <div class="form-value textarea" id="eq-armor-head-effect"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 身体 -->
+                                <div class="armor-slot">
+                                    <div class="armor-slot-label">👕 身体</div>
+                                    <div class="form-group">
+                                        <label class="form-label">防具名称</label>
+                                        <div class="form-value" id="eq-armor-body-name"></div>
+                                    </div>
+                                    <div class="form-grid-2" style="margin-top:8px">
+                                        <div class="form-group">
+                                            <label class="form-label">攻击抵抗</label>
+                                            <div class="form-value" id="eq-armor-body-def"></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">效果抵抗</label>
+                                            <div class="form-value" id="eq-armor-body-res"></div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-top:8px">
+                                        <label class="form-label">特殊效果</label>
+                                        <div class="form-value textarea" id="eq-armor-body-effect"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 双手 -->
+                                <div class="armor-slot">
+                                    <div class="armor-slot-label">🧤 双手</div>
+                                    <div class="form-group">
+                                        <label class="form-label">防具名称</label>
+                                        <div class="form-value" id="eq-armor-hands-name"></div>
+                                    </div>
+                                    <div class="form-grid-2" style="margin-top:8px">
+                                        <div class="form-group">
+                                            <label class="form-label">攻击抵抗</label>
+                                            <div class="form-value" id="eq-armor-hands-def"></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">效果抵抗</label>
+                                            <div class="form-value" id="eq-armor-hands-res"></div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-top:8px">
+                                        <label class="form-label">特殊效果</label>
+                                        <div class="form-value textarea" id="eq-armor-hands-effect"></div>
+                                    </div>
+                                </div>
+
+                                <!-- 脚部 -->
+                                <div class="armor-slot">
+                                    <div class="armor-slot-label">👢 脚部</div>
+                                    <div class="form-group">
+                                        <label class="form-label">防具名称</label>
+                                        <div class="form-value" id="eq-armor-feet-name"></div>
+                                    </div>
+                                    <div class="form-grid-2" style="margin-top:8px">
+                                        <div class="form-group">
+                                            <label class="form-label">攻击抵抗</label>
+                                            <div class="form-value" id="eq-armor-feet-def"></div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">效果抵抗</label>
+                                            <div class="form-value" id="eq-armor-feet-res"></div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-top:8px">
+                                        <label class="form-label">特殊效果</label>
+                                        <div class="form-value textarea" id="eq-armor-feet-effect"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 额外模块（下方） -->
+                    <div class="equipment-section">
+                        <div class="equipment-section-title">✨ 额外</div>
+                        <div class="equipment-subcard">
+                            <div class="equipment-subtitle">额外槽位</div>
+                            <div class="form-group">
+                                <label class="form-label">物品名称</label>
+                                <div class="form-value" id="eq-extra-name"></div>
+                            </div>
+                            <div class="form-grid-3" style="margin-top:10px">
+                                <div class="form-group">
+                                    <label class="form-label">消耗</label>
+                                    <div class="form-value" id="eq-extra-cost"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">范围</label>
+                                    <div class="form-value" id="eq-extra-range"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">使用限制</label>
+                                    <div class="form-value" id="eq-extra-limit"></div>
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-top:10px">
+                                <label class="form-label">物品效果</label>
+                                <div class="form-value textarea" id="eq-extra-effect"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 魔导学面板 -->
+    <div class="overlay" id="panel-magic">
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">魔导学系统</span>
+                <button class="panel-close" onclick="closePanel('magic')">×</button>
+            </div>
+            <div class="panel-content">
+                <!-- 系统切换标签 -->
+                <div class="magic-tabs">
+                    <button class="magic-tab active" onclick="switchMagicSystem('orb')">法球系统</button>
+                    <button class="magic-tab" onclick="switchMagicSystem('mech')">机甲系统</button>
+                    <button class="magic-tab" onclick="switchMagicSystem('rune')">魔纹系统</button>
+                </div>
+
+                <!-- 法球系统内容 -->
+                <div id="magic-orb">
+                    <div class="orb-slots">
+                        <!-- 法球槽1 -->
+                        <div class="orb-slot">
+                            <div class="orb-level" id="orb1-level">能级 I</div>
+                            <div class="orb-header">
+                                <div class="orb-icon">1</div>
+                                <div>
+                                    <div class="orb-name" id="orb1-name">-- 未装备 --</div>
+                                    <div class="orb-prefix" id="orb1-prefix">前缀: --</div>
+                                </div>
+                            </div>
+                            <div class="form-grid-3">
+                                <div class="form-group">
+                                    <label class="form-label">距离</label>
+                                    <div class="form-value" id="orb1-range"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">消耗</label>
+                                    <div class="form-value" id="orb1-cost"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">蓄力/咏唱</label>
+                                    <div class="form-value" id="orb1-charge"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">使用限制</label>
+                                    <div class="form-value" id="orb1-limit"></div>
+                                </div>
+                                <div class="form-group form-full">
+                                    <label class="form-label">剧情描述</label>
+                                    <div class="form-value textarea" id="orb1-story"></div>
+                                </div>
+                                <div class="form-group form-full">
+                                    <label class="form-label">法球效果</label>
+                                    <div class="form-value textarea" id="orb1-effect"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 法球槽2 -->
+                        <div class="orb-slot">
+                            <div class="orb-level" id="orb2-level">能级 II</div>
+                            <div class="orb-header">
+                                <div class="orb-icon">2</div>
+                                <div>
+                                    <div class="orb-name" id="orb2-name">-- 未装备 --</div>
+                                    <div class="orb-prefix" id="orb2-prefix">前缀: --</div>
+                                </div>
+                            </div>
+                            <div class="form-grid-3">
+                                <div class="form-group">
+                                    <label class="form-label">距离</label>
+                                    <div class="form-value" id="orb2-range"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">消耗</label>
+                                    <div class="form-value" id="orb2-cost"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">蓄力/咏唱</label>
+                                    <div class="form-value" id="orb2-charge"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">使用限制</label>
+                                    <div class="form-value" id="orb2-limit"></div>
+                                </div>
+                                <div class="form-group form-full">
+                                    <label class="form-label">剧情描述</label>
+                                    <div class="form-value textarea" id="orb2-story"></div>
+                                </div>
+                                <div class="form-group form-full">
+                                    <label class="form-label">法球效果</label>
+                                    <div class="form-value textarea" id="orb2-effect"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 法球槽3 -->
+                        <div class="orb-slot">
+                            <div class="orb-level" id="orb3-level">能级 III</div>
+                            <div class="orb-header">
+                                <div class="orb-icon">3</div>
+                                <div>
+                                    <div class="orb-name" id="orb3-name">-- 未装备 --</div>
+                                    <div class="orb-prefix" id="orb3-prefix">前缀: --</div>
+                                </div>
+                            </div>
+                            <div class="form-grid-3">
+                                <div class="form-group">
+                                    <label class="form-label">距离</label>
+                                    <div class="form-value" id="orb3-range"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">消耗</label>
+                                    <div class="form-value" id="orb3-cost"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">蓄力/咏唱</label>
+                                    <div class="form-value" id="orb3-charge"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">使用限制</label>
+                                    <div class="form-value" id="orb3-limit"></div>
+                                </div>
+                                <div class="form-group form-full">
+                                    <label class="form-label">剧情描述</label>
+                                    <div class="form-value textarea" id="orb3-story"></div>
+                                </div>
+                                <div class="form-group form-full">
+                                    <label class="form-label">法球效果</label>
+                                    <div class="form-value textarea" id="orb3-effect"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 机甲系统（预留空间） -->
+                <div id="magic-mech" style="display:none">
+                    <div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+                        <div style="font-size:48px;margin-bottom:20px">⚙</div>
+                        <div style="font-size:16px;font-weight:600">机甲系统</div>
+                        <div style="font-size:12px;margin-top:10px">预留开发空间</div>
+                    </div>
+                </div>
+
+                <!-- 魔纹系统（预留空间） -->
+                <div id="magic-rune" style="display:none">
+                    <div style="text-align:center;padding:60px 20px;color:var(--text-muted)">
+                        <div style="font-size:48px;margin-bottom:20px">ᚱ</div>
+                        <div style="font-size:16px;font-weight:600">魔纹系统</div>
+                        <div style="font-size:12px;margin-top:10px">预留开发空间</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== 核心交互功能 =====
+
+        // 当前主题状态
+        let currentTheme = 'black';
+
+        /**
+         * 切换配色主题
+         */
+        function toggleTheme() {
+            currentTheme = currentTheme === 'black' ? 'white' : 'black';
+            document.body.className = 'theme-' + currentTheme;
+        }
+
+        /**
+         * 翻转卡片（正反面切换）
+         */
+        function flipCard() {
+            const card = document.getElementById('mainCard');
+            card.classList.toggle('flipped');
+        }
+
+        /**
+         * 处理卡片点击事件（用于翻转）
+         * 阻止模块按钮的事件冒泡
+         */
+        function handleCardClick(event) {
+            // 检查点击的是否是模块按钮或其子元素
+            if (!event.target.closest('.module-btn')) {
+                flipCard();
+            }
+        }
+
+        /**
+         * 打开展开面板
+         * @param {string} panelName - 面板名称
+         */
+        function openPanel(panelName) {
+            const overlay = document.getElementById('panel-' + panelName);
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        /**
+         * 关闭展开面板
+         * @param {string} panelName - 面板名称
+         */
+        function closePanel(panelName) {
+            const overlay = document.getElementById('panel-' + panelName);
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        /**
+         * 切换魔导学系统
+         * @param {string} system - 'orb' | 'mech' | 'rune'
+         */
+        function switchMagicSystem(system) {
+            // 更新标签状态
+            document.querySelectorAll('.magic-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // 显示对应内容
+            document.getElementById('magic-orb').style.display = 'none';
+            document.getElementById('magic-mech').style.display = 'none';
+            document.getElementById('magic-rune').style.display = 'none';
+            document.getElementById('magic-' + system).style.display = 'block';
+        }
+
+        // 点击遮罩层关闭面板
+        document.querySelectorAll('.overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
+            });
+        });
+
+        // ESC键关闭所有面板
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.overlay').forEach(overlay => {
+                    overlay.classList.remove('active');
+                });
+                document.body.style.overflow = '';
+            }
+        });
+
+        // ===== Excel数据对接API =====
+        // 以下函数供Excel通过JavaScript调用注入数据
+        // 使用方式：在Excel中通过VBA或Office Script调用 window.updateCharacterData(data)
+
+        /**
+         * 更新角色基础信息
+         * @param {Object} data - 角色数据对象
+         */
+        window.updateCharacterData = function(data) {
+            // 基础信息
+            if (data.name) {
+                document.getElementById('char-name').textContent = data.name;
+            }
+            if (data.race) {
+                document.getElementById('char-race').textContent = data.race;
+            }
+            if (data.class) {
+                document.getElementById('char-class').textContent = data.class;
+            }
+            if (data.gender) document.getElementById('char-gender').textContent = data.gender;
+            if (data.age) document.getElementById('char-age').textContent = data.age;
+            if (data.birthplace) document.getElementById('char-birthplace').textContent = data.birthplace;
+            if (data.appearance) document.getElementById('char-appearance').textContent = data.appearance;
+            if (data.personality) document.getElementById('char-personality').textContent = data.personality;
+            if (data.goal) document.getElementById('char-goal').textContent = data.goal;
+            if (data.backstory) document.getElementById('char-backstory').textContent = data.backstory;
+        };
+
+        /**
+         * 更新属性数据
+         * @param {Object} data - 属性数据对象
+         */
+        window.updateStatsData = function(data) {
+            // 八维属性
+            const attrs = ['str', 'dex', 'con', 'int', 'wil', 'per', 'luk', 'cha'];
+            attrs.forEach(attr => {
+                if (data[attr]) {
+                    document.getElementById('attr-' + attr).textContent = data[attr];
+                }
+                if (data[attr + 'Vs']) {
+                    document.getElementById('attr-' + attr + '-vs').textContent = data[attr + 'Vs'];
+                }
+            });
+
+            // 状态值
+            if (data.hp) {
+                document.getElementById('stat-hp').textContent = data.hp;
+            }
+            if (data.sp) document.getElementById('stat-sp').textContent = data.sp;
+            if (data.mp) {
+                document.getElementById('stat-mp').textContent = data.mp;
+            }
+
+            // 其他数值
+            if (data.gold) document.getElementById('stat-gold').textContent = data.gold;
+            if (data.points) document.getElementById('stat-points').textContent = data.points;
+            if (data.attack) document.getElementById('stat-attack').textContent = data.attack;
+            if (data.dmgType) document.getElementById('stat-dmgtype').textContent = data.dmgType;
+            if (data.def) document.getElementById('stat-def').textContent = data.def;
+            if (data.res) document.getElementById('stat-res').textContent = data.res;
+            if (data.atkAttr) document.getElementById('stat-atkattr').textContent = data.atkAttr;
+            if (data.effAttr) document.getElementById('stat-effattr').textContent = data.effAttr;
+
+            // 命中属性
+            if (data.mainAtkHit) document.getElementById('hit-main-atk').textContent = data.mainAtkHit;
+            if (data.mainEffHit) document.getElementById('hit-main-eff').textContent = data.mainEffHit;
+            if (data.offAtkHit) document.getElementById('hit-off-atk').textContent = data.offAtkHit;
+            if (data.offEffHit) document.getElementById('hit-off-eff').textContent = data.offEffHit;
+        };
+
+        /**
+         * 更新装备数据
+         * @param {Object} data - 装备数据对象
+         */
+        window.updateEquipmentData = function(data) {
+            // 主手武器
+            if (data.mainHand) {
+                const mh = data.mainHand;
+                if (mh.name) {
+                    document.getElementById('eq-main-name').textContent = mh.name;
+                }
+                if (mh.bonus) document.getElementById('eq-main-bonus').textContent = mh.bonus;
+                if (mh.atkHit) document.getElementById('eq-main-atkhit').textContent = mh.atkHit;
+                if (mh.effHit) document.getElementById('eq-main-effhit').textContent = mh.effHit;
+                if (mh.cost) document.getElementById('eq-main-cost').textContent = mh.cost;
+                if (mh.range) document.getElementById('eq-main-range').textContent = mh.range;
+                if (mh.limit) document.getElementById('eq-main-limit').textContent = mh.limit;
+                if (mh.effect) document.getElementById('eq-main-effect').textContent = mh.effect;
+            }
+
+            // 副手武器
+            if (data.offHand) {
+                const oh = data.offHand;
+                if (oh.name) document.getElementById('eq-off-name').textContent = oh.name;
+                if (oh.bonus) document.getElementById('eq-off-bonus').textContent = oh.bonus;
+                if (oh.atkHit) document.getElementById('eq-off-atkhit').textContent = oh.atkHit;
+                if (oh.effHit) document.getElementById('eq-off-effhit').textContent = oh.effHit;
+                if (oh.cost) document.getElementById('eq-off-cost').textContent = oh.cost;
+                if (oh.range) document.getElementById('eq-off-range').textContent = oh.range;
+                if (oh.limit) document.getElementById('eq-off-limit').textContent = oh.limit;
+                if (oh.effect) document.getElementById('eq-off-effect').textContent = oh.effect;
+            }
+
+            // 防具 - 分部位
+            if (data.armor) {
+                // 头部
+                if (data.armor.head) {
+                    const h = data.armor.head;
+                    if (h.name) document.getElementById('eq-armor-head-name').textContent = h.name;
+                    if (h.def) document.getElementById('eq-armor-head-def').textContent = h.def;
+                    if (h.res) document.getElementById('eq-armor-head-res').textContent = h.res;
+                    if (h.effect) document.getElementById('eq-armor-head-effect').textContent = h.effect;
+                }
+                // 身体
+                if (data.armor.body) {
+                    const b = data.armor.body;
+                    if (b.name) document.getElementById('eq-armor-body-name').textContent = b.name;
+                    if (b.def) document.getElementById('eq-armor-body-def').textContent = b.def;
+                    if (b.res) document.getElementById('eq-armor-body-res').textContent = b.res;
+                    if (b.effect) document.getElementById('eq-armor-body-effect').textContent = b.effect;
+                }
+                // 双手
+                if (data.armor.hands) {
+                    const ha = data.armor.hands;
+                    if (ha.name) document.getElementById('eq-armor-hands-name').textContent = ha.name;
+                    if (ha.def) document.getElementById('eq-armor-hands-def').textContent = ha.def;
+                    if (ha.res) document.getElementById('eq-armor-hands-res').textContent = ha.res;
+                    if (ha.effect) document.getElementById('eq-armor-hands-effect').textContent = ha.effect;
+                }
+                // 脚部
+                if (data.armor.feet) {
+                    const f = data.armor.feet;
+                    if (f.name) document.getElementById('eq-armor-feet-name').textContent = f.name;
+                    if (f.def) document.getElementById('eq-armor-feet-def').textContent = f.def;
+                    if (f.res) document.getElementById('eq-armor-feet-res').textContent = f.res;
+                    if (f.effect) document.getElementById('eq-armor-feet-effect').textContent = f.effect;
+                }
+            }
+
+            // 额外槽位
+            if (data.extra) {
+                const ex = data.extra;
+                if (ex.name) document.getElementById('eq-extra-name').textContent = ex.name;
+                if (ex.cost) document.getElementById('eq-extra-cost').textContent = ex.cost;
+                if (ex.range) document.getElementById('eq-extra-range').textContent = ex.range;
+                if (ex.limit) document.getElementById('eq-extra-limit').textContent = ex.limit;
+                if (ex.effect) document.getElementById('eq-extra-effect').textContent = ex.effect;
+            }
+        };
+
+        /**
+         * 更新法球数据
+         * @param {Object} data - 法球数据对象
+         */
+        window.updateOrbData = function(data) {
+            let equippedCount = 0;
+
+            for (let i = 1; i <= 3; i++) {
+                const orb = data['orb' + i];
+                if (!orb) continue;
+
+                if (orb.name) {
+                    document.getElementById('orb' + i + '-name').textContent = orb.name;
+                    equippedCount++;
+                }
+                if (orb.level) document.getElementById('orb' + i + '-level').textContent = '能级 ' + orb.level;
+                if (orb.prefix) document.getElementById('orb' + i + '-prefix').textContent = '前缀: ' + orb.prefix;
+                if (orb.range) document.getElementById('orb' + i + '-range').textContent = orb.range;
+                if (orb.cost) document.getElementById('orb' + i + '-cost').textContent = orb.cost;
+                if (orb.charge) document.getElementById('orb' + i + '-charge').textContent = orb.charge;
+                if (orb.limit) document.getElementById('orb' + i + '-limit').textContent = orb.limit;
+                if (orb.story) document.getElementById('orb' + i + '-story').textContent = orb.story;
+                if (orb.effect) document.getElementById('orb' + i + '-effect').textContent = orb.effect;
+            }
+        };
+
+        /**
+         * 批量更新所有数据（推荐Excel使用此接口）
+         * @param {Object} fullData - 完整的角色卡数据
+         */
+        window.updateAllData = function(fullData) {
+            if (fullData.character) window.updateCharacterData(fullData.character);
+            if (fullData.stats) window.updateStatsData(fullData.stats);
+            if (fullData.equipment) window.updateEquipmentData(fullData.equipment);
+            if (fullData.orbs) window.updateOrbData(fullData.orbs);
+        };
+
+        // ===== 初始化 =====
+        console.log('法球卡框架已加载，等待Excel数据注入...');
+        console.log('数据注入API: window.updateAllData(data)');
+    </script>
+</body>
+</html>
